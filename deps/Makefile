@@ -1,4 +1,6 @@
 # Dependency Makefile
+export DEPS_ROOT_DIR = $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+export DEPS_INSTALL_DIR = $(DEPS_ROOT_DIR)/install
 
 uname_S:= $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
@@ -42,6 +44,9 @@ distclean:
 	-(cd jemalloc && [ -f Makefile ] && $(MAKE) distclean) > /dev/null || true
 	-(cd hdr_histogram && $(MAKE) clean) > /dev/null || true
 	-(cd fpconv && $(MAKE) clean) > /dev/null || true
+	-(cd urcu/src && $(MAKE) clean) > /dev/null || true
+	-(rm -rf $(DEPS_INSTALL_DIR))
+	-(cd neco && $(MAKE) clean) > /dev/null || true
 	-(rm -f .make-*)
 
 .PHONY: distclean
@@ -116,3 +121,18 @@ jemalloc: .make-prerequisites
 	cd jemalloc && $(MAKE) lib/libjemalloc.a
 
 .PHONY: jemalloc
+
+urcu: .make-prerequisites
+	@printf '%b %b\n' $(MAKECOLOR)MAKE$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR)
+	cd $@ && ./bootstrap
+	cd $@ && CFLAGS="-m64 $(OPTIMIZATION) $(DEBUG)" ./configure --prefix=$(DEPS_INSTALL_DIR)
+	cd $@ && make
+	cd $@ && make install
+
+.PHONY: urcu
+
+neco: .make-prerequisites
+	@printf '%b %b\n' $(MAKECOLOR)MAKE$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR)
+	cd $@ && make
+
+.PHONY: neco
